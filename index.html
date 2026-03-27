@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MRKT Insight, LLC — Mobile App Development</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #1a1a2e;
+            --paper: #f8f7f4;
+            --accent: #2d5a7b;
+            --accent-light: #e8f0f6;
+            --muted: #6b7280;
+            --border: #e2e0dc;
+            --radius: 8px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--paper);
+            color: var(--ink);
+            line-height: 1.7;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Header */
+        header {
+            padding: 60px 0 48px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo-mark {
+            font-family: 'Fraunces', serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: -0.5px;
+        }
+
+        .logo-mark span {
+            color: var(--accent);
+        }
+
+        .tagline {
+            font-size: 1.1rem;
+            color: var(--muted);
+            margin-top: 8px;
+        }
+
+        /* Main content */
+        main {
+            padding: 48px 0;
+        }
+
+        section {
+            margin-bottom: 48px;
+        }
+
+        h2 {
+            font-family: 'Fraunces', serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--ink);
+            margin-bottom: 16px;
+            letter-spacing: -0.3px;
+        }
+
+        p {
+            font-size: 1rem;
+            color: #374151;
+            margin-bottom: 16px;
+        }
+
+        p:last-child {
+            margin-bottom: 0;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* Apps section */
+        .app-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-top: 16px;
+        }
+
+        .app-card h3 {
+            font-family: 'Fraunces', serif;
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .app-card p {
+            font-size: 0.95rem;
+            color: var(--muted);
+            margin-bottom: 0;
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent);
+            background: var(--accent-light);
+            padding: 3px 10px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+        }
+
+        /* Privacy policy */
+        #privacy {
+            padding-top: 48px;
+            border-top: 1px solid var(--border);
+        }
+
+        .privacy-content p,
+        .privacy-content li {
+            font-size: 0.93rem;
+            color: #4b5563;
+        }
+
+        .privacy-content h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--ink);
+            margin-top: 28px;
+            margin-bottom: 10px;
+        }
+
+        .privacy-content ul {
+            margin: 8px 0 16px 20px;
+        }
+
+        .privacy-content li {
+            margin-bottom: 6px;
+            line-height: 1.6;
+        }
+
+        .effective-date {
+            font-size: 0.85rem;
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        /* Footer */
+        footer {
+            padding: 32px 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+
+        footer p {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            header { padding: 40px 0 32px; }
+            .logo-mark { font-size: 1.6rem; }
+            main { padding: 32px 0; }
+            section { margin-bottom: 36px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-mark">MRKT <span>Insight</span></div>
+            <p class="tagline">Mobile applications crafted in St. Charles, Missouri</p>
+        </header>
+
+        <main>
+            <section id="about">
+                <h2>About</h2>
+                <p>MRKT Insight, LLC is an independent app development studio focused on building thoughtful, well-crafted Android applications. We create apps across a range of interests — from music and entertainment to productivity and beyond — and publish them on Google Play.</p>
+                <p>Based in St. Charles, Missouri, MRKT Insight is a small studio that values clean design, solid engineering, and respect for the communities our apps serve.</p>
+            </section>
+
+            <section id="apps">
+                <h2>Apps</h2>
+                <div class="app-card">
+                    <div class="badge">Coming Soon</div>
+                    <h3>Being Grateful</h3>
+                    <p>A free Android app for streaming live Grateful Dead recordings from the Internet Archive's Live Music Archive. Browse the full catalog by year, discover the best-rated shows, build your favorites, and listen — on your phone, tablet, Android TV, or Android Auto.</p>
+                </div>
+            </section>
+
+            <section id="contact">
+                <h2>Contact</h2>
+                <p>For questions, feedback, or support, reach us at <a href="mailto:mrktinsightllc@gmail.com">mrktinsightllc@gmail.com</a>.</p>
+            </section>
+
+            <section id="privacy">
+                <h2>Privacy Policy</h2>
+                <p class="effective-date">Effective date: March 27, 2026</p>
+
+                <div class="privacy-content">
+                    <p>MRKT Insight, LLC ("we," "us," or "our") operates mobile applications published on Google Play. This Privacy Policy describes how we handle information when you use our apps.</p>
+
+                    <h3>Information We Collect</h3>
+                    <p>Our apps are designed to respect your privacy. We do not require account creation, and we do not collect, store, or transmit personal information such as your name, email address, or location.</p>
+
+                    <h3>Usage Data</h3>
+                    <p>Our apps may use standard Android platform services and third-party services that collect limited technical data, including:</p>
+                    <ul>
+                        <li>Device type, operating system version, and app version (for compatibility and crash reporting)</li>
+                        <li>Anonymous usage statistics provided by Google Play (such as install counts and crash logs)</li>
+                    </ul>
+                    <p>This data is collected by the Android platform and Google Play, not directly by us. Please refer to <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a> for details on how Google handles this data.</p>
+
+                    <h3>Network Access</h3>
+                    <p>Our apps require internet access to stream audio content from third-party sources such as the Internet Archive. We do not intercept, log, or store your network activity or the content you access.</p>
+
+                    <h3>Third-Party Services</h3>
+                    <p>Our apps may link to or stream content from third-party services (such as the Internet Archive). These services have their own privacy policies, and we encourage you to review them. We are not responsible for the privacy practices of third-party services.</p>
+
+                    <h3>Children's Privacy</h3>
+                    <p>Our apps are not directed at children under the age of 13. We do not knowingly collect personal information from children.</p>
+
+                    <h3>Changes to This Policy</h3>
+                    <p>We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated effective date.</p>
+
+                    <h3>Contact Us</h3>
+                    <p>If you have questions about this Privacy Policy, please contact us at <a href="mailto:mrktinsightllc@gmail.com">mrktinsightllc@gmail.com</a>.</p>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 MRKT Insight, LLC. All rights reserved. St. Charles, Missouri.</p>
+        </footer>
+    </div>
+</body>
+</html>
