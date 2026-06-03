@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-feature-settings: "ss01", "cv11";
+}
+
+/* Subtle border between panels without competing with content */
+.divide-line > * + * {
+  border-top: 1px solid theme("colors.line");
+}
