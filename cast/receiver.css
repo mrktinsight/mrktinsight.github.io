@@ -1,0 +1,48 @@
+/*
+ * Being Grateful - Cast Web Receiver styling.
+ *
+ * Colours mirror the app's Compose theme (presentation/theme/Color.kt):
+ *   CosmicNavy  #0A1628  background
+ *   StarGold    #E8B931  primary / progress
+ *   CosmicWhite #E8EAF0  text
+ *
+ * Only documented cast-media-player custom properties are used:
+ * https://developers.google.com/cast/docs/web_receiver/customize_ui
+ */
+
+cast-media-player {
+  /* The point of the whole exercise: fill the screen with the app's navy
+     instead of the Default Media Receiver's black. */
+  --background-color: #0A1628;
+  --background-image: none;
+
+  /* Shown while the receiver is launching, before any media arrives. */
+  --logo-image: url('https://mrktinsight.github.io/assets/being-grateful/cast-art-1024.jpg');
+  --logo-background: #0A1628;
+  --logo-repeat: no-repeat;
+  --logo-size: contain;
+
+  /* Shown when connected but idle. Same mark, same navy, so the launch ->
+     idle -> playing transition doesn't flash a different colour. */
+  --splash-image: url('https://mrktinsight.github.io/assets/being-grateful/cast-art-1024.jpg');
+  --splash-background: #0A1628;
+  --splash-repeat: no-repeat;
+  --splash-size: contain;
+
+  /* Progress bar and accent. --theme-hue tints the built-in controls; 44 is
+     the hue of StarGold, so they sit with the progress colour rather than
+     against it. */
+  --progress-color: #E8B931;
+  --theme-hue: 44;
+
+  --font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* Belt and braces: the element is the whole page, so kill any default
+   margin and make sure nothing shows through behind it. */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background-color: #0A1628;
+}
