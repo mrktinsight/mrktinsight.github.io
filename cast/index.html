@@ -22,85 +22,68 @@
       // Hide the duplicate album-art card when a track has no real artwork.
       //
       // The sender substitutes a hosted rose (cast-art-1024.jpg) for tracks
-      // without community artwork. CAF's TV audio layout then renders that same
-      // image twice: full-bleed in the background slideshow AND as the
-      // top-right album-art card (#castMetadataImage inside tv-overlay). The
-      // background is wanted; the corner duplicate is not. Community artwork
-      // must keep showing in the card, so this is conditional on the URL, which
-      // rules out plain CSS - and the card lives two OPEN shadow roots deep
-      // (cast-media-player > tv-overlay), which rules out receiver.css anyway.
+      // without community artwork. The audio playback UI renders that image
+      // twice: full-bleed as the background (wanted) and again as a small
+      // album-art card (the duplicate). Community artwork must keep showing
+      // in the card, so this is conditional on the URL - which rules out
+      // plain CSS - and the nodes live inside open shadow roots, which rules
+      // out receiver.css anyway.
       //
-      // Uses undocumented framework internals, so it degrades gracefully: if a
-      // framework update renames these nodes, the card simply shows again.
+      // Verified on hardware 2026-08-24 (Vizio, Chromecast built-in): the
+      // card there is div.album-art (320px). Android TV runtimes render
+      // tv-overlay > #castMetadataImage instead; both are handled, plus a
+      // size-based fallback (background/splash/logo are viewport-wide, the
+      // card is not) in case another runtime names it differently. Uses
+      // undocumented framework internals, so it degrades gracefully: if a
+      // framework update changes them, the card simply shows again.
       (function () {
         var FALLBACK_MARKER = 'cast-art-1024';
+        var CARD_SELECTOR = '.album-art, #castMetadataImage, .metadataImage';
 
-        // TEMPORARY diagnostic readout, remove once verified on hardware.
-        var diag = document.createElement('div');
-        diag.style.cssText = 'position:fixed;left:16px;top:8px;' +
-          'z-index:2147483647;font:22px monospace;color:#E8B931;' +
-          'background:rgba(10,22,40,0.9);padding:4px 10px;max-width:92vw;' +
-          'white-space:pre-wrap;word-break:break-all;pointer-events:none;';
+        // Known card nodes start hidden so the fallback rose never flashes;
+        // the watcher reveals them as soon as real artwork is confirmed.
+        var styleInjected = false;
 
-        function describe(el) {
-          return el.tagName.toLowerCase() +
-            (el.id ? '#' + el.id : '') +
-            (el.className && typeof el.className === 'string'
-              ? '.' + el.className.trim().split(/\s+/).join('.') : '');
+        function paintsRose(el) {
+          var bg = (el.style.backgroundImage || '') + '|' +
+            (getComputedStyle(el).backgroundImage || '') + '|' + (el.src || '');
+          return bg.indexOf(FALLBACK_MARKER) !== -1;
         }
 
-        // Collect elements painting the rose, piercing open shadow roots.
-        function collectRoseEls(root, out, depth) {
+        // Walk open shadow roots collecting card candidates: anything
+        // matching the known selectors, plus any sub-fullscreen element
+        // painting the rose.
+        function collectCards(root, out, depth) {
           if (depth > 8) return;
           var all = root.querySelectorAll('*');
           for (var i = 0; i < all.length; i++) {
             var el = all[i];
-            var bg = (el.style.backgroundImage || '') + '|' +
-              (getComputedStyle(el).backgroundImage || '') + '|' +
-              (el.src || '');
-            if (bg.indexOf(FALLBACK_MARKER) !== -1) out.push(el);
-            if (el.shadowRoot) collectRoseEls(el.shadowRoot, out, depth + 1);
+            if (el.matches && el.matches(CARD_SELECTOR)) {
+              out.push(el);
+            } else if (paintsRose(el)) {
+              var r = el.getBoundingClientRect();
+              if (r.width > 0 && r.width < window.innerWidth * 0.8) out.push(el);
+            }
+            if (el.shadowRoot) collectCards(el.shadowRoot, out, depth + 1);
           }
         }
 
-        // The full-bleed background, splash and logo are viewport-sized; the
-        // duplicate corner card is not. Size, not class names, decides what
-        // gets hidden - runtimes name these nodes differently per device.
-        var hiddenEls = [];
         setInterval(function () {
-          var status = ['v7'];
           var player = document.querySelector('cast-media-player');
           var psr = player && player.shadowRoot;
-
-          // Keep the readout on top of whatever UI the runtime builds.
-          var mount = psr || document.body;
-          if (diag.parentNode !== mount) mount.appendChild(diag);
-
-          var found = [];
-          collectRoseEls(document, found, 0);
-          var names = [];
-          for (var i = 0; i < found.length; i++) {
-            var el = found[i];
-            var r = el.getBoundingClientRect();
-            var small = r.width > 0 && r.width < window.innerWidth * 0.8;
-            if (small) {
-              // visibility (not display) so the layout doesn't reflow.
-              el.style.visibility = 'hidden';
-              if (hiddenEls.indexOf(el) === -1) hiddenEls.push(el);
-              names.push(describe(el) + '@' + Math.round(r.width) + 'px');
-            }
+          if (psr && !styleInjected) {
+            var style = document.createElement('style');
+            style.textContent = '.album-art { visibility: hidden; }';
+            psr.appendChild(style);
+            styleInjected = true;
           }
-          // Un-hide anything no longer showing the rose (track with real
-          // community artwork came up).
-          for (var j = hiddenEls.length - 1; j >= 0; j--) {
-            if (found.indexOf(hiddenEls[j]) === -1) {
-              hiddenEls[j].style.visibility = '';
-              hiddenEls.splice(j, 1);
-            }
+          var cards = [];
+          collectCards(document, cards, 0);
+          for (var i = 0; i < cards.length; i++) {
+            // 'visible' (not '') so revealing beats the injected default-hide.
+            cards[i].style.visibility = paintsRose(cards[i]) ? 'hidden' : 'visible';
           }
-          status.push('hid: ' + (names.join(' | ') || 'none'));
-          diag.textContent = status.join('  ');
-        }, 1000);
+        }, 250);
       })();
     </script>
   </body>
