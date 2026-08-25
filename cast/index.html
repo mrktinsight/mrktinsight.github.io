@@ -37,44 +37,40 @@
 
         // TEMPORARY diagnostic readout, remove once verified on hardware.
         var diag = document.createElement('div');
-        diag.style.cssText = 'position:fixed;left:16px;top:8px;z-index:99999;' +
-          'font:20px monospace;color:#E8B931;background:rgba(10,22,40,0.85);' +
-          'padding:4px 10px;max-width:90vw;white-space:pre-wrap;';
-        document.body.appendChild(diag);
+        diag.style.cssText = 'position:fixed;left:16px;top:8px;' +
+          'z-index:2147483647;font:22px monospace;color:#E8B931;' +
+          'background:rgba(10,22,40,0.9);padding:4px 10px;max-width:92vw;' +
+          'white-space:pre-wrap;word-break:break-all;pointer-events:none;';
 
         setInterval(function () {
-          var status = ['v3'];
+          var status = ['v4'];
           var player = document.querySelector('cast-media-player');
-          status.push('player:' + (player ? 'y' : 'n'));
           var psr = player && player.shadowRoot;
-          status.push('psr:' + (psr ? 'y' : 'n'));
-          var overlay = psr && psr.querySelector('tv-overlay');
-          status.push('overlay:' + (overlay ? 'y' : 'n'));
-          var sr = overlay && overlay.shadowRoot;
-          status.push('osr:' + (sr ? 'y' : 'n'));
-          if (sr) {
-            var card = sr.getElementById('castMetadataImage');
-            status.push('card:' + (card ? 'y' : 'n'));
-            if (card) {
-              var bg = card.style.backgroundImage || '';
-              var isFallback = bg.indexOf(FALLBACK_MARKER) !== -1;
-              status.push('fallback:' + isFallback);
-              // visibility (not display) so the metadata layout doesn't reflow.
-              card.style.visibility = isFallback ? 'hidden' : '';
-            }
-            // Every element in the overlay whose background is the rose, in
-            // case the card is not the node this script expects.
-            var matches = [];
-            var all = sr.querySelectorAll('*');
-            for (var i = 0; i < all.length; i++) {
-              var cs = getComputedStyle(all[i]).backgroundImage || '';
-              if (cs.indexOf(FALLBACK_MARKER) !== -1) {
-                matches.push(all[i].tagName.toLowerCase() +
-                  (all[i].id ? '#' + all[i].id : '') +
-                  (all[i].className ? '.' + String(all[i].className).trim().split(/\s+/).join('.') : ''));
-              }
-            }
-            status.push('rose-els: ' + (matches.join(' | ') || 'none'));
+          var overlay = (psr && psr.querySelector('tv-overlay')) ||
+            document.querySelector('tv-overlay');
+          var osr = overlay && overlay.shadowRoot;
+          status.push('psr:' + (psr ? 'y' : 'n') +
+            ' ov:' + (overlay ? 'y' : 'n') + ' osr:' + (osr ? 'y' : 'n'));
+
+          // Keep the readout on top: mount it in the deepest UI root so the
+          // playback overlay cannot cover it.
+          var mount = osr || psr || document.body;
+          if (diag.parentNode !== mount) mount.appendChild(diag);
+
+          var card = null;
+          var searchRoots = [osr, psr, document].filter(Boolean);
+          for (var r = 0; r < searchRoots.length && !card; r++) {
+            card = searchRoots[r].querySelector('#castMetadataImage, .metadataImage');
+          }
+          status.push('card:' + (card ? 'y' : 'n'));
+          if (card) {
+            var bg = card.style.backgroundImage ||
+              getComputedStyle(card).backgroundImage || '';
+            var isFallback = bg.indexOf(FALLBACK_MARKER) !== -1;
+            status.push('fallback:' + isFallback);
+            status.push('bg:' + bg.slice(-90));
+            // visibility (not display) so the metadata layout doesn't reflow.
+            card.style.visibility = isFallback ? 'hidden' : '';
           }
           diag.textContent = status.join('  ');
         }, 1000);
