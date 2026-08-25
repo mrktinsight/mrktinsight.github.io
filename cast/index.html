@@ -42,27 +42,33 @@
           'background:rgba(10,22,40,0.9);padding:4px 10px;max-width:92vw;' +
           'white-space:pre-wrap;word-break:break-all;pointer-events:none;';
 
-        // Collect the album-art card(s), piercing every open shadow root.
-        // On this device generation the audio playback UI renders the artwork
-        // twice: div.bg-image full-bleed (wanted) and div.album.art as a
-        // corner card (the duplicate). Android TV runtimes use tv-overlay >
-        // #castMetadataImage instead, so match both shapes.
-        function collectCards(root, out, depth) {
+        function describe(el) {
+          return el.tagName.toLowerCase() +
+            (el.id ? '#' + el.id : '') +
+            (el.className && typeof el.className === 'string'
+              ? '.' + el.className.trim().split(/\s+/).join('.') : '');
+        }
+
+        // Collect elements painting the rose, piercing open shadow roots.
+        function collectRoseEls(root, out, depth) {
           if (depth > 8) return;
           var all = root.querySelectorAll('*');
           for (var i = 0; i < all.length; i++) {
             var el = all[i];
-            var cl = el.classList;
-            if ((cl && cl.contains('album') && cl.contains('art')) ||
-                el.id === 'castMetadataImage') {
-              out.push(el);
-            }
-            if (el.shadowRoot) collectCards(el.shadowRoot, out, depth + 1);
+            var bg = (el.style.backgroundImage || '') + '|' +
+              (getComputedStyle(el).backgroundImage || '') + '|' +
+              (el.src || '');
+            if (bg.indexOf(FALLBACK_MARKER) !== -1) out.push(el);
+            if (el.shadowRoot) collectRoseEls(el.shadowRoot, out, depth + 1);
           }
         }
 
+        // The full-bleed background, splash and logo are viewport-sized; the
+        // duplicate corner card is not. Size, not class names, decides what
+        // gets hidden - runtimes name these nodes differently per device.
+        var hiddenEls = [];
         setInterval(function () {
-          var status = ['v6'];
+          var status = ['v7'];
           var player = document.querySelector('cast-media-player');
           var psr = player && player.shadowRoot;
 
@@ -70,21 +76,29 @@
           var mount = psr || document.body;
           if (diag.parentNode !== mount) mount.appendChild(diag);
 
-          var cards = [];
-          collectCards(document, cards, 0);
-          var hidden = 0;
-          for (var i = 0; i < cards.length; i++) {
-            var card = cards[i];
-            var bg = (card.style.backgroundImage || '') + '|' +
-              (getComputedStyle(card).backgroundImage || '') + '|' +
-              (card.src || '');
-            var isFallback = bg.indexOf(FALLBACK_MARKER) !== -1;
-            // visibility (not display) so the layout doesn't reflow; cleared
-            // again when a track with real artwork comes up.
-            card.style.visibility = isFallback ? 'hidden' : '';
-            if (isFallback) hidden++;
+          var found = [];
+          collectRoseEls(document, found, 0);
+          var names = [];
+          for (var i = 0; i < found.length; i++) {
+            var el = found[i];
+            var r = el.getBoundingClientRect();
+            var small = r.width > 0 && r.width < window.innerWidth * 0.8;
+            if (small) {
+              // visibility (not display) so the layout doesn't reflow.
+              el.style.visibility = 'hidden';
+              if (hiddenEls.indexOf(el) === -1) hiddenEls.push(el);
+              names.push(describe(el) + '@' + Math.round(r.width) + 'px');
+            }
           }
-          status.push('cards:' + cards.length + ' hidden:' + hidden);
+          // Un-hide anything no longer showing the rose (track with real
+          // community artwork came up).
+          for (var j = hiddenEls.length - 1; j >= 0; j--) {
+            if (found.indexOf(hiddenEls[j]) === -1) {
+              hiddenEls[j].style.visibility = '';
+              hiddenEls.splice(j, 1);
+            }
+          }
+          status.push('hid: ' + (names.join(' | ') || 'none'));
           diag.textContent = status.join('  ');
         }, 1000);
       })();
