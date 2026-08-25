@@ -38,26 +38,31 @@
       // framework update renames these nodes, the card simply shows again.
       (function () {
         var STYLE_ID = 'bg-hide-art-card';
-        function ensureStyle(root, css) {
-          if (!root || root.getElementById && root.getElementById(STYLE_ID)) return;
-          if (root.querySelector && root.querySelector('#' + STYLE_ID)) return;
-          var style = document.createElement('style');
-          style.id = STYLE_ID;
-          style.textContent = css;
-          root.appendChild(style);
-        }
-        setInterval(function () {
-          var player = document.querySelector('cast-media-player');
-          var psr = player && player.shadowRoot;
-          if (!psr) return;
-          ensureStyle(psr, '.album-art { visibility: hidden !important; }');
-          var overlay = psr.querySelector('tv-overlay');
-          var osr = overlay && overlay.shadowRoot;
-          if (osr) {
-            ensureStyle(osr,
-              '.metadataImage { visibility: hidden !important; }');
+        var CARD_SELECTOR = '.album-art, .metadataImage, #castMetadataImage';
+        var CSS = CARD_SELECTOR + ' { visibility: hidden !important; }';
+
+        // Walk the whole tree, piercing every open shadow root: inline-hide
+        // any card element found (the mechanism verified on hardware), and
+        // drop a stylesheet into each shadow root along the way so cards
+        // created later in that root never paint at all.
+        function sweep(root, depth) {
+          if (!root || depth > 8) return;
+          if (root.nodeType === 11 && !root.getElementById(STYLE_ID)) {
+            var style = document.createElement('style');
+            style.id = STYLE_ID;
+            style.textContent = CSS;
+            root.appendChild(style);
           }
-        }, 250);
+          var all = root.querySelectorAll('*');
+          for (var i = 0; i < all.length; i++) {
+            var el = all[i];
+            if (el.matches && el.matches(CARD_SELECTOR)) {
+              el.style.setProperty('visibility', 'hidden', 'important');
+            }
+            if (el.shadowRoot) sweep(el.shadowRoot, depth + 1);
+          }
+        }
+        setInterval(function () { sweep(document, 0); }, 250);
       })();
     </script>
   </body>
