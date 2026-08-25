@@ -18,6 +18,47 @@
       // Media3's CastPlayer sends fully-formed MediaInfo (content URL, MIME type,
       // MUSIC_TRACK metadata and artwork), so no interception is needed here.
       cast.framework.CastReceiverContext.getInstance().start();
+
+      // Hide the duplicate album-art card when a track has no real artwork.
+      //
+      // The sender substitutes a hosted rose (cast-art-1024.jpg) for tracks
+      // without community artwork. CAF's TV audio layout then renders that same
+      // image twice: full-bleed in the background slideshow AND as the
+      // top-right album-art card (#castMetadataImage inside tv-overlay). The
+      // background is wanted; the corner duplicate is not. Community artwork
+      // must keep showing in the card, so this is conditional on the URL, which
+      // rules out plain CSS - and the card lives two OPEN shadow roots deep
+      // (cast-media-player > tv-overlay), which rules out receiver.css anyway.
+      //
+      // Uses undocumented framework internals, so it degrades gracefully: if a
+      // framework update renames these nodes, the card simply shows again.
+      (function () {
+        var FALLBACK_MARKER = 'cast-art-1024';
+        var STYLE_ID = 'bg-hide-fallback-art';
+        setInterval(function () {
+          var player = document.querySelector('cast-media-player');
+          var overlay = player && player.shadowRoot &&
+            player.shadowRoot.querySelector('tv-overlay');
+          var sr = overlay && overlay.shadowRoot;
+          if (!sr) return; // tv-overlay only exists on TV devices, mid-playback
+          if (!sr.getElementById(STYLE_ID)) {
+            var style = document.createElement('style');
+            style.id = STYLE_ID;
+            // visibility (not display) so the metadata layout doesn't reflow.
+            style.textContent =
+              '.tv-overlay[data-bg-fallback-art="true"] .metadataImage' +
+              ' { visibility: hidden; }';
+            sr.appendChild(style);
+          }
+          var root = sr.getElementById('tv-overlay');
+          var card = sr.getElementById('castMetadataImage');
+          if (root && card) {
+            var isFallback =
+              (card.style.backgroundImage || '').indexOf(FALLBACK_MARKER) !== -1;
+            root.dataset.bgFallbackArt = String(isFallback);
+          }
+        }, 1000);
+      })();
     </script>
   </body>
 </html>
