@@ -42,30 +42,27 @@
           'background:rgba(10,22,40,0.9);padding:4px 10px;max-width:92vw;' +
           'white-space:pre-wrap;word-break:break-all;pointer-events:none;';
 
-        function describe(el) {
-          return el.tagName.toLowerCase() +
-            (el.id ? '#' + el.id : '') +
-            (el.className && typeof el.className === 'string'
-              ? '.' + el.className.trim().split(/\s+/).join('.') : '');
-        }
-
-        // Walk the whole tree, piercing every open shadow root, and collect
-        // elements whose image is the rose.
-        function collectRoseEls(root, out, depth) {
+        // Collect the album-art card(s), piercing every open shadow root.
+        // On this device generation the audio playback UI renders the artwork
+        // twice: div.bg-image full-bleed (wanted) and div.album.art as a
+        // corner card (the duplicate). Android TV runtimes use tv-overlay >
+        // #castMetadataImage instead, so match both shapes.
+        function collectCards(root, out, depth) {
           if (depth > 8) return;
           var all = root.querySelectorAll('*');
           for (var i = 0; i < all.length; i++) {
             var el = all[i];
-            var bg = (el.style.backgroundImage || '') + '|' +
-              (getComputedStyle(el).backgroundImage || '') + '|' +
-              (el.src || '');
-            if (bg.indexOf(FALLBACK_MARKER) !== -1) out.push(el);
-            if (el.shadowRoot) collectRoseEls(el.shadowRoot, out, depth + 1);
+            var cl = el.classList;
+            if ((cl && cl.contains('album') && cl.contains('art')) ||
+                el.id === 'castMetadataImage') {
+              out.push(el);
+            }
+            if (el.shadowRoot) collectCards(el.shadowRoot, out, depth + 1);
           }
         }
 
         setInterval(function () {
-          var status = ['v5'];
+          var status = ['v6'];
           var player = document.querySelector('cast-media-player');
           var psr = player && player.shadowRoot;
 
@@ -73,17 +70,21 @@
           var mount = psr || document.body;
           if (diag.parentNode !== mount) mount.appendChild(diag);
 
-          var found = [];
-          collectRoseEls(document, found, 0);
-          var slides = 0;
-          var names = [];
-          for (var i = 0; i < found.length; i++) {
-            var d = describe(found[i]);
-            if (d.indexOf('.slide') !== -1) { slides++; continue; }
-            names.push(d);
+          var cards = [];
+          collectCards(document, cards, 0);
+          var hidden = 0;
+          for (var i = 0; i < cards.length; i++) {
+            var card = cards[i];
+            var bg = (card.style.backgroundImage || '') + '|' +
+              (getComputedStyle(card).backgroundImage || '') + '|' +
+              (card.src || '');
+            var isFallback = bg.indexOf(FALLBACK_MARKER) !== -1;
+            // visibility (not display) so the layout doesn't reflow; cleared
+            // again when a track with real artwork comes up.
+            card.style.visibility = isFallback ? 'hidden' : '';
+            if (isFallback) hidden++;
           }
-          status.push('slides:' + slides);
-          status.push('els: ' + (names.join(' | ') || 'none'));
+          status.push('cards:' + cards.length + ' hidden:' + hidden);
           diag.textContent = status.join('  ');
         }, 1000);
       })();
