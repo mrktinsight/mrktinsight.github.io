@@ -19,69 +19,43 @@
       // MUSIC_TRACK metadata and artwork), so no interception is needed here.
       cast.framework.CastReceiverContext.getInstance().start();
 
-      // Hide the duplicate album-art card when a track has no real artwork.
+      // Hide the small album-art card unconditionally.
       //
-      // The sender substitutes a hosted rose (cast-art-1024.jpg) for tracks
-      // without community artwork. The audio playback UI renders that image
-      // twice: full-bleed as the background (wanted) and again as a small
-      // album-art card (the duplicate). Community artwork must keep showing
-      // in the card, so this is conditional on the URL - which rules out
-      // plain CSS - and the nodes live inside open shadow roots, which rules
-      // out receiver.css anyway.
+      // The audio playback UI renders the track artwork twice: full-bleed as
+      // the background (wanted) and again as a small corner card. The sender
+      // sends the branded rose for every track, so the card is always a
+      // duplicate of the background. The card nodes live inside open shadow
+      // roots, out of reach of receiver.css, so a style is injected into each
+      // root as soon as it exists - before the card is ever painted, so
+      // nothing flashes. A conditional show-community-artwork version of this
+      // was tried and rejected: revealing the card raced the artwork load and
+      // flashed it at every track change.
       //
       // Verified on hardware 2026-08-24 (Vizio, Chromecast built-in): the
-      // card there is div.album-art (320px). Android TV runtimes render
-      // tv-overlay > #castMetadataImage instead; both are handled, plus a
-      // size-based fallback (background/splash/logo are viewport-wide, the
-      // card is not) in case another runtime names it differently. Uses
+      // card there is div.album-art. Android TV runtimes render
+      // tv-overlay > #castMetadataImage instead; both are covered. Uses
       // undocumented framework internals, so it degrades gracefully: if a
-      // framework update changes them, the card simply shows again.
+      // framework update renames these nodes, the card simply shows again.
       (function () {
-        var FALLBACK_MARKER = 'cast-art-1024';
-        var CARD_SELECTOR = '.album-art, #castMetadataImage, .metadataImage';
-
-        // Known card nodes start hidden so the fallback rose never flashes;
-        // the watcher reveals them as soon as real artwork is confirmed.
-        var styleInjected = false;
-
-        function paintsRose(el) {
-          var bg = (el.style.backgroundImage || '') + '|' +
-            (getComputedStyle(el).backgroundImage || '') + '|' + (el.src || '');
-          return bg.indexOf(FALLBACK_MARKER) !== -1;
+        var STYLE_ID = 'bg-hide-art-card';
+        function ensureStyle(root, css) {
+          if (!root || root.getElementById && root.getElementById(STYLE_ID)) return;
+          if (root.querySelector && root.querySelector('#' + STYLE_ID)) return;
+          var style = document.createElement('style');
+          style.id = STYLE_ID;
+          style.textContent = css;
+          root.appendChild(style);
         }
-
-        // Walk open shadow roots collecting card candidates: anything
-        // matching the known selectors, plus any sub-fullscreen element
-        // painting the rose.
-        function collectCards(root, out, depth) {
-          if (depth > 8) return;
-          var all = root.querySelectorAll('*');
-          for (var i = 0; i < all.length; i++) {
-            var el = all[i];
-            if (el.matches && el.matches(CARD_SELECTOR)) {
-              out.push(el);
-            } else if (paintsRose(el)) {
-              var r = el.getBoundingClientRect();
-              if (r.width > 0 && r.width < window.innerWidth * 0.8) out.push(el);
-            }
-            if (el.shadowRoot) collectCards(el.shadowRoot, out, depth + 1);
-          }
-        }
-
         setInterval(function () {
           var player = document.querySelector('cast-media-player');
           var psr = player && player.shadowRoot;
-          if (psr && !styleInjected) {
-            var style = document.createElement('style');
-            style.textContent = '.album-art { visibility: hidden; }';
-            psr.appendChild(style);
-            styleInjected = true;
-          }
-          var cards = [];
-          collectCards(document, cards, 0);
-          for (var i = 0; i < cards.length; i++) {
-            // 'visible' (not '') so revealing beats the injected default-hide.
-            cards[i].style.visibility = paintsRose(cards[i]) ? 'hidden' : 'visible';
+          if (!psr) return;
+          ensureStyle(psr, '.album-art { visibility: hidden !important; }');
+          var overlay = psr.querySelector('tv-overlay');
+          var osr = overlay && overlay.shadowRoot;
+          if (osr) {
+            ensureStyle(osr,
+              '.metadataImage { visibility: hidden !important; }');
           }
         }, 250);
       })();
