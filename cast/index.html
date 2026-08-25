@@ -42,36 +42,48 @@
           'background:rgba(10,22,40,0.9);padding:4px 10px;max-width:92vw;' +
           'white-space:pre-wrap;word-break:break-all;pointer-events:none;';
 
+        function describe(el) {
+          return el.tagName.toLowerCase() +
+            (el.id ? '#' + el.id : '') +
+            (el.className && typeof el.className === 'string'
+              ? '.' + el.className.trim().split(/\s+/).join('.') : '');
+        }
+
+        // Walk the whole tree, piercing every open shadow root, and collect
+        // elements whose image is the rose.
+        function collectRoseEls(root, out, depth) {
+          if (depth > 8) return;
+          var all = root.querySelectorAll('*');
+          for (var i = 0; i < all.length; i++) {
+            var el = all[i];
+            var bg = (el.style.backgroundImage || '') + '|' +
+              (getComputedStyle(el).backgroundImage || '') + '|' +
+              (el.src || '');
+            if (bg.indexOf(FALLBACK_MARKER) !== -1) out.push(el);
+            if (el.shadowRoot) collectRoseEls(el.shadowRoot, out, depth + 1);
+          }
+        }
+
         setInterval(function () {
-          var status = ['v4'];
+          var status = ['v5'];
           var player = document.querySelector('cast-media-player');
           var psr = player && player.shadowRoot;
-          var overlay = (psr && psr.querySelector('tv-overlay')) ||
-            document.querySelector('tv-overlay');
-          var osr = overlay && overlay.shadowRoot;
-          status.push('psr:' + (psr ? 'y' : 'n') +
-            ' ov:' + (overlay ? 'y' : 'n') + ' osr:' + (osr ? 'y' : 'n'));
 
-          // Keep the readout on top: mount it in the deepest UI root so the
-          // playback overlay cannot cover it.
-          var mount = osr || psr || document.body;
+          // Keep the readout on top of whatever UI the runtime builds.
+          var mount = psr || document.body;
           if (diag.parentNode !== mount) mount.appendChild(diag);
 
-          var card = null;
-          var searchRoots = [osr, psr, document].filter(Boolean);
-          for (var r = 0; r < searchRoots.length && !card; r++) {
-            card = searchRoots[r].querySelector('#castMetadataImage, .metadataImage');
+          var found = [];
+          collectRoseEls(document, found, 0);
+          var slides = 0;
+          var names = [];
+          for (var i = 0; i < found.length; i++) {
+            var d = describe(found[i]);
+            if (d.indexOf('.slide') !== -1) { slides++; continue; }
+            names.push(d);
           }
-          status.push('card:' + (card ? 'y' : 'n'));
-          if (card) {
-            var bg = card.style.backgroundImage ||
-              getComputedStyle(card).backgroundImage || '';
-            var isFallback = bg.indexOf(FALLBACK_MARKER) !== -1;
-            status.push('fallback:' + isFallback);
-            status.push('bg:' + bg.slice(-90));
-            // visibility (not display) so the metadata layout doesn't reflow.
-            card.style.visibility = isFallback ? 'hidden' : '';
-          }
+          status.push('slides:' + slides);
+          status.push('els: ' + (names.join(' | ') || 'none'));
           diag.textContent = status.join('  ');
         }, 1000);
       })();
