@@ -34,29 +34,49 @@
       // framework update renames these nodes, the card simply shows again.
       (function () {
         var FALLBACK_MARKER = 'cast-art-1024';
-        var STYLE_ID = 'bg-hide-fallback-art';
+
+        // TEMPORARY diagnostic readout, remove once verified on hardware.
+        var diag = document.createElement('div');
+        diag.style.cssText = 'position:fixed;left:16px;top:8px;z-index:99999;' +
+          'font:20px monospace;color:#E8B931;background:rgba(10,22,40,0.85);' +
+          'padding:4px 10px;max-width:90vw;white-space:pre-wrap;';
+        document.body.appendChild(diag);
+
         setInterval(function () {
+          var status = ['v3'];
           var player = document.querySelector('cast-media-player');
-          var overlay = player && player.shadowRoot &&
-            player.shadowRoot.querySelector('tv-overlay');
+          status.push('player:' + (player ? 'y' : 'n'));
+          var psr = player && player.shadowRoot;
+          status.push('psr:' + (psr ? 'y' : 'n'));
+          var overlay = psr && psr.querySelector('tv-overlay');
+          status.push('overlay:' + (overlay ? 'y' : 'n'));
           var sr = overlay && overlay.shadowRoot;
-          if (!sr) return; // tv-overlay only exists on TV devices, mid-playback
-          if (!sr.getElementById(STYLE_ID)) {
-            var style = document.createElement('style');
-            style.id = STYLE_ID;
-            // visibility (not display) so the metadata layout doesn't reflow.
-            style.textContent =
-              '.tv-overlay[data-bg-fallback-art="true"] .metadataImage' +
-              ' { visibility: hidden; }';
-            sr.appendChild(style);
+          status.push('osr:' + (sr ? 'y' : 'n'));
+          if (sr) {
+            var card = sr.getElementById('castMetadataImage');
+            status.push('card:' + (card ? 'y' : 'n'));
+            if (card) {
+              var bg = card.style.backgroundImage || '';
+              var isFallback = bg.indexOf(FALLBACK_MARKER) !== -1;
+              status.push('fallback:' + isFallback);
+              // visibility (not display) so the metadata layout doesn't reflow.
+              card.style.visibility = isFallback ? 'hidden' : '';
+            }
+            // Every element in the overlay whose background is the rose, in
+            // case the card is not the node this script expects.
+            var matches = [];
+            var all = sr.querySelectorAll('*');
+            for (var i = 0; i < all.length; i++) {
+              var cs = getComputedStyle(all[i]).backgroundImage || '';
+              if (cs.indexOf(FALLBACK_MARKER) !== -1) {
+                matches.push(all[i].tagName.toLowerCase() +
+                  (all[i].id ? '#' + all[i].id : '') +
+                  (all[i].className ? '.' + String(all[i].className).trim().split(/\s+/).join('.') : ''));
+              }
+            }
+            status.push('rose-els: ' + (matches.join(' | ') || 'none'));
           }
-          var root = sr.getElementById('tv-overlay');
-          var card = sr.getElementById('castMetadataImage');
-          if (root && card) {
-            var isFallback =
-              (card.style.backgroundImage || '').indexOf(FALLBACK_MARKER) !== -1;
-            root.dataset.bgFallbackArt = String(isFallback);
-          }
+          diag.textContent = status.join('  ');
         }, 1000);
       })();
     </script>
